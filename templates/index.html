@@ -130,36 +130,36 @@
             const createList = (items) => items.map(item => `<li>${item}</li>`).join('');
 
             let urgentHtml = '';
-            if (data.urgent_care_needed && data.urgent_care_needed.length > 0) {
+            if (data.guidance.urgent_care_needed && data.guidance.urgent_care_needed.length > 0) {
                 urgentHtml = `
                     <div class="card urgent-card full-width-card">
                         <h3><span>⚠️</span>Urgent Care Recommended</h3>
-                        <ul>${createList(data.urgent_care_needed)}</ul>
+                        <ul>${createList(data.guidance.urgent_care_needed)}</ul>
                     </div>
                 `;
             }
 
             resultsDiv.innerHTML = `
                 <div class="grid-container">
-                    <div class="card severity-card full-width-card severity-${data.severity_assessment}">
-                        Severity Assessment: ${data.severity_assessment}
+                    <div class="card severity-card full-width-card severity-${data.analysis.severity_assessment}">
+                        Severity Assessment: ${data.analysis.severity_assessment}
                     </div>
                     
                     ${urgentHtml}
 
                     <div class="card">
                         <h3><span>🩺</span>Probable Conditions</h3>
-                        <ul>${createList(data.possible_conditions)}</ul>
+                        <ul>${createList(data.medical_information.possible_conditions)}</ul>
                     </div>
 
                     <div class="card">
                         <h3><span>📝</span>General Recommendations</h3>
-                        <ul>${createList(data.general_recommendations)}</ul>
+                        <ul>${createList(data.guidance.general_recommendations)}</ul>
                     </div>
 
                     <div class="card full-width-card">
-                        <h3><span>📊</span>Analysis Confidence: ${data.confidence_score}</h3>
-                        <p class="confidence-justification">"${data.confidence_justification}"</p>
+                        <h3><span>📊</span>Analysis Confidence: ${data.analysis.confidence_score}</h3>
+                        <p class="confidence-justification">"${data.analysis.confidence_justification}"</p>
                     </div>
 
                     <div class="card disclaimer-card full-width-card">
@@ -172,3 +172,4 @@
     </script>
 </body>
 </html>
+

@@ -3,10 +3,13 @@ import json
 from datetime import datetime
 import google.generativeai as genai
 from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
 from dotenv import load_dotenv
 
 load_dotenv()
+
 app = Flask(__name__)
+CORS(app)
 
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
@@ -29,7 +32,6 @@ def symptom_check():
         generation_config = genai.GenerationConfig(response_mime_type="application/json")
         model = genai.GenerativeModel('models/gemini-2.5-flash', generation_config=generation_config)
         
-        # PROMPT FOR A DEEPLY NESTED, HIERARCHICAL JSON STRUCTURE
         prompt = f"""
         Analyze the user's symptoms and return a single, valid JSON object with the exact nested schema defined below. Do not deviate from this structure.
         Context: Today is {datetime.now().strftime('%Y-%m-%d')}. User is in Vijayawada, India.
@@ -66,3 +68,4 @@ def symptom_check():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
