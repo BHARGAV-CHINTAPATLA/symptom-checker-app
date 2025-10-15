@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare Symptom Checker</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            max-width: 900px; 
+            margin: 20px auto; 
+            padding: 20px; 
+            background-color: #f4f6f9; 
+            color: #212529; 
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 { color: #0d6efd; text-align: center; }
+        textarea { 
+            width: 100%; height: 120px; padding: 12px; 
+            border: 1px solid #ced4da; border-radius: 8px; 
+            font-size: 1rem; margin-top: 10px; 
+            box-sizing: border-box; resize: vertical;
+        }
+        button { 
+            display: block; width: 100%; padding: 14px; margin-top: 15px; 
+            background-color: #0d6efd; color: white; border: none; 
+            border-radius: 8px; font-size: 1.1rem; font-weight: 500;
+            cursor: pointer; transition: background-color 0.2s; 
+        }
+        button:hover { background-color: #0b5ed7; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        
+        #results { margin-top: 30px; }
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+        .card h3 { 
+            margin-top: 0; margin-bottom: 15px; font-size: 1.2rem;
+            color: #343a40; border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px; display: flex; align-items: center;
+        }
+        .card h3 span { margin-right: 10px; }
+        ul { list-style-type: none; padding-left: 0; }
+        ul li { 
+            margin-bottom: 12px; line-height: 1.5; padding-left: 25px;
+            position: relative;
+        }
+        ul li::before {
+            content: '✓'; position: absolute; left: 0;
+            color: #198754; font-weight: bold;
+        }
+
+        .full-width-card { grid-column: 1 / -1; }
+        .severity-card { text-align: center; font-weight: bold; font-size: 1.1rem; }
+        .severity-Low { background-color: #d1e7dd; color: #0f5132; }
+        .severity-Moderate { background-color: #fff3cd; color: #664d03; }
+        .severity-High { background-color: #f8d7da; color: #842029; }
+
+        .urgent-card { border: 2px solid #dc3545; background-color: #f8d7da1a; }
+        .urgent-card h3 { color: #dc3545; }
+        .urgent-card ul li::before { content: '!'; color: #dc3545; }
+        
+        .disclaimer-card { background-color: #fff3cd; color: #664d03; border-left: 5px solid #ffc107; }
+        .confidence-justification { font-style: italic; color: #6c757d; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Healthcare Symptom Checker</h1>
+        <p>Enter your symptoms below. This tool is for educational purposes only.</p>
+        <textarea id="symptoms" placeholder="e.g., I have a high fever, a pounding headache, and a sore throat..."></textarea>
+        <button id="submitBtn" onclick="checkSymptoms()">Analyze Symptoms</button>
+        <div id="results" style="display:none;"></div>
+    </div>
+
+    <script>
+        async function checkSymptoms() {
+            const symptomsText = document.getElementById('symptoms').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const resultsDiv = document.getElementById('results');
+
+            if (!symptomsText.trim()) {
+                alert('Please enter your symptoms.'); return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Analyzing...';
+            resultsDiv.style.display = 'none';
+            resultsDiv.innerHTML = '';
+
+            try {
+                const response = await fetch('/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symptoms: symptomsText }),
+                });
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                alert('An error occurred. Please try again.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Analyze Symptoms';
+            }
+        }
+
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            if (data.error) {
+                resultsDiv.innerHTML = `<div class="card severity-High full-width-card">Error: ${data.error}</div>`;
+                resultsDiv.style.display = 'block';
+                return;
+            }
+
+            const createList = (items) => items.map(item => `<li>${item}</li>`).join('');
+
+            let urgentHtml = '';
+            if (data.urgent_care_needed && data.urgent_care_needed.length > 0) {
+                urgentHtml = `
+                    <div class="card urgent-card full-width-card">
+                        <h3><span>⚠️</span>Urgent Care Recommended</h3>
+                        <ul>${createList(data.urgent_care_needed)}</ul>
+                    </div>
+                `;
+            }
+
+            resultsDiv.innerHTML = `
+                <div class="grid-container">
+                    <div class="card severity-card full-width-card severity-${data.severity_assessment}">
+                        Severity Assessment: ${data.severity_assessment}
+                    </div>
+                    
+                    ${urgentHtml}
+
+                    <div class="card">
+                        <h3><span>🩺</span>Probable Conditions</h3>
+                        <ul>${createList(data.possible_conditions)}</ul>
+                    </div>
+
+                    <div class="card">
+                        <h3><span>📝</span>General Recommendations</h3>
+                        <ul>${createList(data.general_recommendations)}</ul>
+                    </div>
+
+                    <div class="card full-width-card">
+                        <h3><span>📊</span>Analysis Confidence: ${data.confidence_score}</h3>
+                        <p class="confidence-justification">"${data.confidence_justification}"</p>
+                    </div>
+
+                    <div class="card disclaimer-card full-width-card">
+                        ${data.disclaimer}
+                    </div>
+                </div>
+            `;
+            resultsDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
